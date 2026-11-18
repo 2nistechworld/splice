@@ -10,13 +10,14 @@
   <div class="app">
     <header class="top-bar">
       <div class="top-side">
-        <button class="icon-btn" onclick="openHelpModal()" aria-label="How to play"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></button>
+        <button class="icon-btn" onclick="openHelpModal()" data-i18n-aria="howToPlay" aria-label="How to play"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></button>
+        <button class="icon-btn lang-btn" onclick="toggleLanguage()" data-i18n="langBtn" data-i18n-aria="langAria" aria-label="Jouer en français">FR</button>
         <button class="icon-btn dev-only hidden" onclick="simulateNextDay()" aria-label="Dev: next day">+1</button>
       </div>
       <h1 class="title">Splice</h1>
       <div class="top-side right">
         <button id="btn-sound" class="icon-btn" onclick="toggleSound()" aria-label="Toggle sound"></button>
-        <button class="icon-btn" onclick="openStatsModal()" aria-label="Statistics"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></button>
+        <button class="icon-btn" onclick="openStatsModal()" data-i18n-aria="statistics" aria-label="Statistics"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></button>
       </div>
     </header>
 
@@ -31,10 +32,10 @@
       <div class="keyboard" id="ks-keyboard"></div>
       <div class="done-bar hidden" id="ks-locked-banner">
         <div class="done-timer">
-          <span class="done-label">Next Splice</span>
+          <span class="done-label" data-i18n="nextSplice">Next Splice</span>
           <span class="done-clock" id="banner-countdown">00:00:00</span>
         </div>
-        <button class="primary-btn" onclick="openStatsModal()">Share</button>
+        <button class="primary-btn" onclick="openStatsModal()" data-i18n="share">Share</button>
       </div>
     </footer>
   </div>
@@ -42,36 +43,36 @@
   <!-- Stats -->
   <div class="modal-backdrop hidden" id="result-modal" onclick="if (event.target === this) closeResultModal()">
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <button class="modal-close" onclick="closeResultModal()" aria-label="Close">✕</button>
+      <button class="modal-close" onclick="closeResultModal()" data-i18n-aria="close" aria-label="Close">✕</button>
       <h2 class="modal-title" id="modal-title">Statistics</h2>
       <p class="modal-subtitle" id="modal-subtitle"></p>
 
       <div class="stats-grid">
-        <div><span class="stat-val" id="stat-played">0</span><span class="stat-lbl">Played</span></div>
-        <div><span class="stat-val" id="stat-win-pct">0</span><span class="stat-lbl">Win %</span></div>
-        <div><span class="stat-val" id="stat-streak">0</span><span class="stat-lbl">Streak</span></div>
-        <div><span class="stat-val" id="stat-max-streak">0</span><span class="stat-lbl">Best</span></div>
+        <div><span class="stat-val" id="stat-played">0</span><span class="stat-lbl" data-i18n="played">Played</span></div>
+        <div><span class="stat-val" id="stat-win-pct">0</span><span class="stat-lbl" data-i18n="winPct">Win %</span></div>
+        <div><span class="stat-val" id="stat-streak">0</span><span class="stat-lbl" data-i18n="streak">Streak</span></div>
+        <div><span class="stat-val" id="stat-max-streak">0</span><span class="stat-lbl" data-i18n="best">Best</span></div>
       </div>
 
       <pre class="share-preview hidden" id="modal-share-preview"></pre>
 
       <div class="modal-footer">
         <div class="done-timer">
-          <span class="done-label">Next Splice</span>
+          <span class="done-label" data-i18n="nextSplice">Next Splice</span>
           <span class="done-clock" id="modal-countdown">00:00:00</span>
         </div>
-        <button class="primary-btn" id="btn-copy-share" onclick="copyShareReceipt()">Share</button>
+        <button class="primary-btn" id="btn-copy-share" onclick="copyShareReceipt()" data-i18n="share">Share</button>
       </div>
-      <button class="link-btn dev-only hidden" onclick="closeResultModal(); simulateNextDay();">Dev: simulate tomorrow</button>
+      <button class="link-btn dev-only hidden" onclick="closeResultModal(); simulateNextDay();" data-i18n="devSim">Dev: simulate tomorrow</button>
     </div>
   </div>
 
   <!-- How to play -->
   <div class="modal-backdrop hidden" id="help-modal" onclick="if (event.target === this) closeHelpModal()">
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="help-title">
-      <button class="modal-close" onclick="closeHelpModal()" aria-label="Close">✕</button>
-      <h2 class="modal-title" id="help-title">How to play</h2>
-      <div class="help-body">
+      <button class="modal-close" onclick="closeHelpModal()" data-i18n-aria="close" aria-label="Close">✕</button>
+      <h2 class="modal-title" id="help-title" data-i18n="howToPlay">How to play</h2>
+      <div class="help-body" id="help-body">
         <p>Find the one word that joins every clue.</p>
         <div class="help-example">
           <div class="clue-row"><span>FLASH</span><span class="blank"></span></div>
@@ -87,6 +88,7 @@
   <div id="toast" class="toast hidden" role="alert"></div>
 
   <script src="words.js"></script>
+  <script src="words-fr.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

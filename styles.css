@@ -89,7 +89,7 @@ button:focus-visible {
 .top-side {
   display: flex;
   gap: 4px;
-  width: 80px;
+  width: 116px;
 }
 
 .top-side.right {
@@ -110,6 +110,16 @@ button:focus-visible {
   font-weight: 700;
   display: grid;
   place-items: center;
+}
+
+.lang-btn {
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  border: 2px solid var(--line-strong);
+  width: 34px;
+  height: 26px;
+  border-radius: 6px;
+  align-self: center;
 }
 
 .icon-btn:hover {
@@ -257,6 +267,11 @@ button:focus-visible {
 
 .clue-row.unused {
   color: var(--muted);
+}
+
+.clue-row.long {
+  font-size: 0.95rem;
+  letter-spacing: 0.03em;
 }
 
 .clue-row.locked {

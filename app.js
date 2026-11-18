@@ -3,11 +3,11 @@
 // ==========================================
 // Developer tools (+1 Day, Sim Tomorrow) only appear with ?dev=1 in the URL.
 // Dev mode uses its own storage so testing never touches real stats/streaks.
-const DEV_MODE = new URLSearchParams(window.location.search).has('dev');
+const URL_PARAMS = new URLSearchParams(window.location.search);
+const DEV_MODE = URL_PARAMS.has('dev');
 const STORAGE_PREFIX = DEV_MODE ? 'keystone_dev_' : 'keystone_';
-const STATS_STORAGE_KEY = `${STORAGE_PREFIX}player_stats_v1`;
-const DAILY_KEY_PREFIX = `${STORAGE_PREFIX}daily_state_v3_`;
 const SOUND_STORAGE_KEY = 'keystone_sound_v1';
+const LANG_STORAGE_KEY = 'splice_lang_v1';
 const KEEP_DAILY_SAVES_DAYS = 7;
 
 function storageGet(key) {
@@ -15,6 +15,162 @@ function storageGet(key) {
 }
 function storageSet(key, value) {
   try { localStorage.setItem(key, value); } catch (_) {}
+}
+
+// ==========================================
+// LANGUAGE (EN / FR)
+// ==========================================
+// ?lang=fr in the URL wins, then the player's saved choice, then the browser.
+const LANGS = ['en', 'fr'];
+function detectLang() {
+  const fromUrl = (URL_PARAMS.get('lang') || '').toLowerCase();
+  if (LANGS.includes(fromUrl)) return fromUrl;
+  const saved = storageGet(LANG_STORAGE_KEY);
+  if (LANGS.includes(saved)) return saved;
+  const nav = (typeof navigator !== 'undefined' && navigator.language) || 'en';
+  return nav.toLowerCase().startsWith('fr') ? 'fr' : 'en';
+}
+let LANG = detectLang();
+
+// Each language keeps its own stats, streak and daily saves.
+// English keeps the original keys so existing players lose nothing.
+function langPrefix() {
+  return STORAGE_PREFIX + (LANG === 'en' ? '' : `${LANG}_`);
+}
+function statsStorageKey() { return `${langPrefix()}player_stats_v1`; }
+function dailyKeyPrefix() { return `${langPrefix()}daily_state_v3_`; }
+
+const STRINGS = {
+  en: {
+    howToPlay: 'How to play',
+    statistics: 'Statistics',
+    played: 'Played',
+    winPct: 'Win %',
+    streak: 'Streak',
+    best: 'Best',
+    nextSplice: 'Next Splice',
+    share: 'Share',
+    close: 'Close',
+    solved: 'Solved!',
+    outOfTurns: 'Out of turns',
+    todaysWord: w => `Today’s word was ${w}`,
+    answerWas: w => `The answer was ${w}`,
+    notEnough: 'Not enough letters',
+    alreadyTried: 'Already tried',
+    lastTurnGuess: 'Last turn — make it a guess',
+    lastTurn: 'Last turn',
+    tapReveal: 'TAP TO REVEAL',
+    lastTurnLocked: 'LAST TURN: GUESS',
+    revealAria: 'Reveal a clue (costs 1 turn)',
+    turnsAria: (left, max) => `${left} of ${max} turns left`,
+    copied: 'Copied to clipboard',
+    copyFail: 'Couldn’t copy — select the text and copy it',
+    enterKey: 'ENTER',
+    backspace: 'Backspace',
+    soundOff: 'Mute sound',
+    soundOn: 'Turn sound on',
+    langBtn: 'FR',
+    langAria: 'Jouer en français',
+    devSim: 'Dev: simulate tomorrow',
+    shareTag: '',
+    help: `
+      <p>Find the one word that joins every clue.</p>
+      <div class="help-example">
+        <div class="clue-row"><span>FLASH</span><span class="blank"></span></div>
+        <div class="clue-row"><span class="blank"></span><span>HOUSE</span></div>
+      </div>
+      <p class="help-answer">→ <strong>LIGHT</strong> (flashlight, lighthouse)</p>
+      <p>You get <strong>5 turns</strong>. Each turn, either guess a word or tap a hidden clue to reveal it. Your last turn must be a guess.</p>
+      <p>A new Splice every day at midnight.</p>`,
+    keyboard: [
+      ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+      ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+      ['ENTER', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'BACKSPACE']
+    ]
+  },
+  fr: {
+    howToPlay: 'Comment jouer',
+    statistics: 'Statistiques',
+    played: 'Parties',
+    winPct: '% gagnées',
+    streak: 'Série',
+    best: 'Record',
+    nextSplice: 'Prochain Splice',
+    share: 'Partager',
+    close: 'Fermer',
+    solved: 'Trouvé !',
+    outOfTurns: 'Plus de tours',
+    todaysWord: w => `Le mot du jour était ${w}`,
+    answerWas: w => `La réponse était ${w}`,
+    notEnough: 'Pas assez de lettres',
+    alreadyTried: 'Déjà essayé',
+    lastTurnGuess: 'Dernier tour : proposez un mot',
+    lastTurn: 'Dernier tour',
+    tapReveal: 'TOUCHER POUR RÉVÉLER',
+    lastTurnLocked: 'DERNIER TOUR : DEVINEZ',
+    revealAria: 'Révéler un indice (coûte 1 tour)',
+    turnsAria: (left, max) => `${left} tour${left > 1 ? 's' : ''} restant${left > 1 ? 's' : ''} sur ${max}`,
+    copied: 'Copié dans le presse-papiers',
+    copyFail: 'Copie impossible : sélectionnez le texte et copiez-le',
+    enterKey: 'ENTRÉE',
+    backspace: 'Effacer',
+    soundOff: 'Couper le son',
+    soundOn: 'Activer le son',
+    langBtn: 'EN',
+    langAria: 'Play in English',
+    devSim: 'Dev : simuler demain',
+    shareTag: ' FR',
+    help: `
+      <p>Trouvez le mot qui complète tous les indices.</p>
+      <div class="help-example">
+        <div class="clue-row"><span>MOT DE</span><span class="blank"></span></div>
+        <div class="clue-row"><span class="blank"></span><span>PARTOUT</span></div>
+      </div>
+      <p class="help-answer">→ <strong>PASSE</strong> (mot de passe, passe-partout)</p>
+      <p>Vous avez <strong>5 tours</strong>. À chaque tour, proposez un mot ou touchez un indice caché pour le révéler. Le dernier tour doit être une proposition.</p>
+      <p>Tapez sans accents : TÊTE s’écrit TETE.</p>
+      <p>Un nouveau Splice chaque jour à minuit.</p>`,
+    keyboard: [
+      ['A', 'Z', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+      ['Q', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M'],
+      ['ENTER', 'W', 'X', 'C', 'V', 'B', 'N', 'BACKSPACE']
+    ]
+  }
+};
+
+function t(key, ...args) {
+  const val = STRINGS[LANG][key];
+  return typeof val === 'function' ? val(...args) : val;
+}
+
+// Fill every element marked data-i18n / data-i18n-aria with the current language.
+function applyStaticText() {
+  if (document.documentElement) document.documentElement.lang = LANG;
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+    el.setAttribute('aria-label', t(el.dataset.i18nAria));
+  });
+  const helpBody = document.getElementById('help-body');
+  if (helpBody) helpBody.innerHTML = t('help');
+}
+
+function toggleLanguage() {
+  LANG = LANG === 'en' ? 'fr' : 'en';
+  storageSet(LANG_STORAGE_KEY, LANG);
+  sfxTap();
+  closeResultModal();
+  applyStaticText();
+  renderSoundButton();
+  renderKeyboard();
+  initDailyGame();
+}
+
+// Typed form of a word: no accents, Œ -> OE, letters only (TÊTE -> TETE).
+function toTypedForm(str) {
+  return str.toUpperCase()
+    .replace(/Œ/g, 'OE').replace(/Æ/g, 'AE')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^A-Z]/g, '');
 }
 
 // ==========================================
@@ -74,7 +230,7 @@ const ICON_SOUND_OFF = '<svg width="22" height="22" viewBox="0 0 24 24" fill="no
 function renderSoundButton() {
   const btn = document.getElementById('btn-sound');
   btn.innerHTML = soundEnabled ? ICON_SOUND_ON : ICON_SOUND_OFF;
-  btn.setAttribute('aria-label', soundEnabled ? 'Mute sound' : 'Turn sound on');
+  btn.setAttribute('aria-label', soundEnabled ? t('soundOff') : t('soundOn'));
 }
 
 function toggleSound() {
@@ -87,17 +243,26 @@ function toggleSound() {
 // ==========================================
 // MASTER WORD DECK
 // ==========================================
-// RAW_DECK lives in words.js (loaded before this file); its header explains
-// the clue format and the rule for adding words.
+// RAW_DECK lives in words.js and RAW_DECK_FR in words-fr.js (both loaded
+// before this file); their headers explain the clue format and the rule for
+// adding words. `answer` is shown to the player; `key` is what they type.
+function buildDeck(raw) {
+  return raw.map(([answer, ...clues]) => ({
+    answer,
+    key: toTypedForm(answer),
+    pool: clues.map(clue => ({
+      word: clue.replace('*', '').replace(/^[\s-]+|[\s-]+$/g, ''),
+      pos: clue.startsWith('*') ? 'after' : 'before',
+      full: clue.replace('*', answer)
+    }))
+  }));
+}
 
-const KEYSTONE_MASTER_DECK = RAW_DECK.map(([answer, ...clues]) => ({
-  answer,
-  pool: clues.map(clue => ({
-    word: clue.replace('*', '').replace(/^[\s-]+|[\s-]+$/g, ''),
-    pos: clue.startsWith('*') ? 'after' : 'before',
-    full: clue.replace('*', answer)
-  }))
-}));
+const DECKS = {
+  en: buildDeck(RAW_DECK),
+  fr: buildDeck(typeof RAW_DECK_FR !== 'undefined' ? RAW_DECK_FR : RAW_DECK)
+};
+function activeDeck() { return DECKS[LANG]; }
 
 // ==========================================
 // DAILY EPOCH & MIDNIGHT RESET ENGINE
@@ -141,7 +306,7 @@ function seededShuffle(arr, seed) {
 // The first pass plays words.js in file order, so appending new words never
 // changes an existing day. Later passes reuse the deck in a seeded shuffle.
 function getRawCycleQueue(cycleIndex) {
-  const indices = KEYSTONE_MASTER_DECK.map((_, idx) => idx);
+  const indices = activeDeck().map((_, idx) => idx);
   if (cycleIndex === 0) return indices;
   return seededShuffle(indices, (cycleIndex + 1) * 101 + 7);
 }
@@ -163,11 +328,12 @@ function getCycleQueue(cycleIndex) {
 
 // Deterministic mapping: any dayIndex -> exact Word + exact 5 Clues
 function getDailyPuzzleForDay(dayIndex) {
-  const deckSize = KEYSTONE_MASTER_DECK.length;
+  const deck = activeDeck();
+  const deckSize = deck.length;
   const cycleIndex = Math.floor(dayIndex / deckSize); // 0, 1, 2...
   const posInCycle = dayIndex % deckSize;
 
-  const wordEntry = KEYSTONE_MASTER_DECK[getCycleQueue(cycleIndex)[posInCycle]];
+  const wordEntry = deck[getCycleQueue(cycleIndex)[posInCycle]];
 
   // Select 5 clues based on cycleIndex (Deck Rotation!)
   const pool = wordEntry.pool;
@@ -177,7 +343,7 @@ function getDailyPuzzleForDay(dayIndex) {
   } else if (cycleIndex === 1) {
     chosen = pool.slice(5, 10);
   } else {
-    const rotatedPool = seededShuffle(pool, cycleIndex * 73 + wordEntry.answer.charCodeAt(0));
+    const rotatedPool = seededShuffle(pool, cycleIndex * 73 + wordEntry.key.charCodeAt(0));
     chosen = rotatedPool.slice(0, 5);
   }
 
@@ -195,11 +361,11 @@ function getDailyPuzzleForDay(dayIndex) {
 // LOCALSTORAGE PERSISTENCE & STREAK STATS
 // ==========================================
 function getDailyStorageKey(dayIndex) {
-  return `${DAILY_KEY_PREFIX}${dayIndex}`;
+  return `${dailyKeyPrefix()}${dayIndex}`;
 }
 
 function loadPlayerStats() {
-  const raw = storageGet(STATS_STORAGE_KEY);
+  const raw = storageGet(statsStorageKey());
   if (raw) {
     try { return JSON.parse(raw); } catch (_) {}
   }
@@ -213,7 +379,7 @@ function loadPlayerStats() {
 }
 
 function savePlayerStats(stats) {
-  storageSet(STATS_STORAGE_KEY, JSON.stringify(stats));
+  storageSet(statsStorageKey(), JSON.stringify(stats));
 }
 
 // The stored streak is only still alive if the last finished day was today
@@ -275,8 +441,8 @@ function pruneOldDailySaves(todayIndex) {
       if (!key) continue;
       if (/^keystone_(dev_)?daily_state_v[12]_/.test(key)) {
         toRemove.push(key); // saves from older puzzle schedules
-      } else if (key.startsWith(DAILY_KEY_PREFIX)) {
-        const idx = parseInt(key.slice(DAILY_KEY_PREFIX.length), 10);
+      } else if (key.startsWith(dailyKeyPrefix())) {
+        const idx = parseInt(key.slice(dailyKeyPrefix().length), 10);
         if (!Number.isNaN(idx) && idx < todayIndex - KEEP_DAILY_SAVES_DAYS) toRemove.push(key);
       }
     }
@@ -359,7 +525,7 @@ function flipClueTile(clueIdx) {
   if (ksState.tileStates[clueIdx] !== 'locked') return;
   if (turnsLeft() <= 1) {
     sfxError();
-    showToast('Last turn — make it a guess');
+    showToast(t('lastTurnGuess'));
     return;
   }
 
@@ -368,7 +534,7 @@ function flipClueTile(clueIdx) {
   ksState.tileStates[clueIdx] = 'extra';
   ksState.history.push('flip');
 
-  if (turnsLeft() === 1) showToast('Last turn — make it a guess');
+  if (turnsLeft() === 1) showToast(t('lastTurnGuess'));
 
   saveDailyBoardState();
   renderKeystone();
@@ -376,7 +542,7 @@ function flipClueTile(clueIdx) {
 
 function handleKeystoneKey(key) {
   if (ksState.gameOver) return;
-  const targetLen = ksState.wordEntry.answer.length;
+  const targetLen = ksState.wordEntry.key.length;
 
   if (key === 'BACKSPACE') {
     if (ksState.currentInput.length > 0) {
@@ -391,7 +557,7 @@ function handleKeystoneKey(key) {
     if (ksState.currentInput.length < targetLen) {
       sfxError();
       shakeWord();
-      showToast('Not enough letters');
+      showToast(t('notEnough'));
       return;
     }
     submitKeystoneGuess();
@@ -413,12 +579,12 @@ function buildShareText() {
   }).join('');
   const turnRow = ksState.history.map(h => (h === 'flip' ? '🔓' : h === 'miss' ? '❌' : '🎯')).join('');
   const score = ksState.solved ? `${ksState.turnsUsed}/${ksState.turnsMax}` : `X/${ksState.turnsMax}`;
-  return `🧩 Splice #${ksState.dayNumber} ${score}\n${clueRow}\n${turnRow}`;
+  return `🧩 Splice${t('shareTag')} #${ksState.dayNumber} ${score}\n${clueRow}\n${turnRow}`;
 }
 
 function submitKeystoneGuess() {
   const guess = ksState.currentInput.toUpperCase();
-  const answer = ksState.wordEntry.answer.toUpperCase();
+  const answer = ksState.wordEntry.key;
 
   if (guess === answer) {
     ksState.solved = true;
@@ -440,7 +606,7 @@ function submitKeystoneGuess() {
   if (ksState.guesses.includes(guess)) {
     sfxError();
     shakeWord();
-    showToast('Already tried');
+    showToast(t('alreadyTried'));
     return;
   }
 
@@ -464,7 +630,7 @@ function submitKeystoneGuess() {
   }
 
   shakeWord();
-  if (turnsLeft() === 1) showToast('Last turn');
+  if (turnsLeft() === 1) showToast(t('lastTurn'));
 
   saveDailyBoardState();
   renderKeystone();
@@ -478,7 +644,7 @@ function renderKeystone() {
   const turnsEl = document.getElementById('ks-turns');
   turnsEl.innerHTML = Array.from({ length: ksState.turnsMax }, (_, i) =>
     `<span class="turn-dot ${i < ksState.turnsUsed ? 'used' : ''}"></span>`).join('');
-  turnsEl.setAttribute('aria-label', `${turnsLeft()} of ${ksState.turnsMax} turns left`);
+  turnsEl.setAttribute('aria-label', t('turnsAria', turnsLeft(), ksState.turnsMax));
 
   // Clues: one row each, blank shows where the answer goes
   const ans = ksState.wordEntry.answer;
@@ -488,8 +654,8 @@ function renderKeystone() {
 
     if (state === 'locked' && !ksState.gameOver) {
       return `<button type="button" class="clue-row locked" onclick="flipClueTile(${idx})"
-        ${canFlip ? '' : 'disabled'} aria-label="Reveal a clue (costs 1 turn)">
-        ${canFlip ? 'TAP TO REVEAL' : 'LAST TURN: GUESS'}</button>`;
+        ${canFlip ? '' : 'disabled'} aria-label="${t('revealAria')}">
+        ${canFlip ? t('tapReveal') : t('lastTurnLocked')}</button>`;
     }
 
     let cls = '';
@@ -501,7 +667,8 @@ function renderKeystone() {
       : '<span class="blank"></span>';
     const word = `<span>${clue.word}</span>`;
     const parts = clue.pos === 'before' ? word + blank : blank + word;
-    return `<div class="clue-row ${cls}">${parts}</div>`;
+    const longCls = clue.word.length > 13 ? 'long' : '';
+    return `<div class="clue-row ${cls} ${longCls}">${parts}</div>`;
   }).join('');
 
   // Wrong guesses
@@ -516,8 +683,8 @@ function renderKeystone() {
 }
 
 function renderKeystoneInput() {
-  const len = ksState.wordEntry.answer.length;
-  const word = ksState.gameOver ? ksState.wordEntry.answer : ksState.currentInput;
+  const len = ksState.wordEntry.key.length;
+  const word = ksState.gameOver ? ksState.wordEntry.key : ksState.currentInput;
   const endCls = ksState.solved ? 'solved' : (ksState.gameOver ? 'failed' : '');
 
   let html = '';
@@ -574,15 +741,15 @@ function openStatsModal() {
   const copyBtn = document.getElementById('btn-copy-share');
 
   if (ksState.gameOver) {
-    titleEl.textContent = ksState.solved ? 'Solved!' : 'Out of turns';
+    titleEl.textContent = ksState.solved ? t('solved') : t('outOfTurns');
     subEl.textContent = ksState.solved
-      ? `Today’s word was ${ksState.wordEntry.answer}`
-      : `The answer was ${ksState.wordEntry.answer}`;
+      ? t('todaysWord', ksState.wordEntry.answer)
+      : t('answerWas', ksState.wordEntry.answer);
     shareEl.textContent = ksState.shareText;
     shareEl.classList.remove('hidden');
     copyBtn.disabled = false;
   } else {
-    titleEl.textContent = 'Statistics';
+    titleEl.textContent = t('statistics');
     subEl.textContent = '';
     shareEl.classList.add('hidden');
     copyBtn.disabled = true;
@@ -630,7 +797,7 @@ async function copyShareReceipt() {
   } catch (_) {
     ok = legacyCopy(ksState.shareText);
   }
-  showToast(ok ? 'Copied to clipboard' : 'Couldn’t copy — select the text and copy it');
+  showToast(ok ? t('copied') : t('copyFail'));
 }
 
 function openHelpModal() {
@@ -642,26 +809,26 @@ function closeHelpModal() {
   document.getElementById('help-modal').classList.add('hidden');
 }
 
-function initKeyboard() {
-  const rows = [
-    ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-    ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-    ['ENTER', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'BACKSPACE']
-  ];
+// On-screen keyboard: QWERTY in English, AZERTY in French.
+function renderKeyboard() {
+  const rows = t('keyboard');
   const kbEl = document.getElementById('ks-keyboard');
   kbEl.innerHTML = rows.map(row => `
     <div class="kb-row">
       ${row.map(k => {
         const isWide = k === 'ENTER' || k === 'BACKSPACE';
-        const label = k === 'BACKSPACE' ? '⌫' : k;
-        const aria = k === 'BACKSPACE' ? 'aria-label="Backspace"' : '';
+        const label = k === 'BACKSPACE' ? '⌫' : (k === 'ENTER' ? t('enterKey') : k);
+        const aria = k === 'BACKSPACE' ? `aria-label="${t('backspace')}"` : '';
         const extraCls = k === 'BACKSPACE' ? 'wide back' : (isWide ? 'wide' : '');
         // blur() so a later physical Enter submits instead of re-pressing this key
         return `<button type="button" class="kb-key ${extraCls}" ${aria} onclick="handleKeystoneKey('${k}'); this.blur();">${label}</button>`;
       }).join('')}
     </div>
   `).join('');
+}
 
+function initKeyboard() {
+  renderKeyboard();
   window.addEventListener('keydown', (e) => {
     const resultOpen = !document.getElementById('result-modal').classList.contains('hidden');
     const helpOpen = !document.getElementById('help-modal').classList.contains('hidden');
@@ -685,8 +852,10 @@ function initKeyboard() {
     } else if (e.key === 'Enter') {
       e.preventDefault();
       handleKeystoneKey('ENTER');
-    } else if (/^[a-zA-Z]$/.test(e.key)) {
-      handleKeystoneKey(e.key.toUpperCase());
+    } else if (e.key.length === 1) {
+      // Accented keys count as the plain letter (é -> E), as answers are typed without accents
+      const letter = toTypedForm(e.key);
+      if (/^[A-Z]$/.test(letter)) handleKeystoneKey(letter);
     }
   });
 }
@@ -695,6 +864,7 @@ window.addEventListener('DOMContentLoaded', () => {
   if (DEV_MODE) {
     document.querySelectorAll('.dev-only').forEach(el => el.classList.remove('hidden'));
   }
+  applyStaticText();
   renderSoundButton();
   initKeyboard();
   initDailyGame();
